@@ -1,0 +1,375 @@
+Sub Separação_de_Pedidos()
+
+   Dim x, y As String
+   Dim valorJ2, valorK2, valorL2 As Double
+   
+        Set objMyConn = New ADODB.Connection
+        Set objMyRecordset = New ADODB.Recordset
+        Dim strSQL As String
+
+  
+        objMyConn.ConnectionString = "Provider=***;Server=***;Database=***;User Id=***;Password=***" 'Dados pertencentes ao Grupo Empresarial
+        objMyConn.CommandTimeout = 280
+        objMyConn.Open
+
+  
+        
+            strSQL = "SELECT SZA010.ZA_PEDIDO, SUM(SZA010.ZA_COMPRI),'', MAX(SZB010.ZB_HORA)"
+            strSQL = strSQL + " FROM SZA010 (NOLOCK) INNER JOIN SZB010 (NOLOCK) ON (SZA010.ZA_PECA = SZB010.ZB_PECA AND SZA010.ZA_FILIAL = SZB010.ZB_FILIAL)"
+            strSQL = strSQL + " WHERE SZA010.ZA_STATUS = 'S' AND SZA010.ZA_DATA = CONVERT(DATE, GETDATE()) AND SZA010.ZA_FILIAL = '04' AND SZA010.D_E_L_E_T_ = '' AND SZB010.D_E_L_E_T_ = '' AND SZB010.ZB_DATA = CONVERT(DATE, GETDATE()) AND SZB010.ZB_HIST IN ('BXCOLETOR','RPCPA67')"
+            strSQL = strSQL + " GROUP BY SZA010.ZA_PEDIDO"
+            strSQL = strSQL + " ORDER BY SZA010.ZA_PEDIDO"
+        
+   
+        
+        Set objMyRecordset.ActiveConnection = objMyConn
+        objMyRecordset.Open strSQL
+
+    
+        
+        Plan1.Range("A2:D200").Clear
+
+        Plan1.Range("A2").CopyFromRecordset (objMyRecordset)
+        
+        
+      
+        
+        objMyConn.Close
+        
+        objMyConn.ConnectionString = "Provider=***;Server=***;Database=***;User Id=***;Password=***" 'Dados pertencentes ao Grupo Empresarial
+        objMyConn.CommandTimeout = 280
+        objMyConn.Open
+
+        
+            strSQL = "SELECT SC5010.C5_PLHREMI, SC6010.C6_NUM, SUM(SC6010.C6_QTDVEN), COUNT(SC6010.C6_ITEM)"
+            strSQL = strSQL + " FROM SC6010 (NOLOCK) INNER JOIN SC5010 (NOLOCK) ON (SC6010.C6_NUM = SC5010.C5_NUM)"
+            strSQL = strSQL + " WHERE SC6010.C6_EMP = 'V' AND SC6010.C6_ENTREG = CONVERT(DATE, GETDATE()) AND SC6010.C6_FILIAL = '04' AND SC6010.C6_EPR = 'ES' AND SC6010.D_E_L_E_T_ = '' AND SC5010.C5_FILIAL = '04' AND SC5010.D_E_L_E_T_ = ''"
+            strSQL = strSQL + " GROUP BY SC6010.C6_NUM, SC5010.C5_PLHREMI"
+            strSQL = strSQL + " ORDER BY SC6010.C6_NUM"
+        
+        
+        Set objMyRecordset.ActiveConnection = objMyConn
+        objMyRecordset.Open strSQL
+        
+
+        
+        Plan1.Range("F2:I200").Clear
+
+        Plan1.Range("F2").CopyFromRecordset (objMyRecordset)
+        
+        Plan1.Range("C2:C200").HorizontalAlignment = xlCenter
+        
+        
+        x = "A"
+        y = "G"
+        
+        For i = 2 To 100
+        
+        i = CStr(i)
+        
+        x = Mid(x, 1, 1) + i
+        
+        For j = 2 To 100
+        
+        j = CStr(j)
+        
+        y = Mid(y, 1, 1) + j
+        
+            If Range(x) = Range(y) Then
+                If Range(x) <> "" Then
+                
+                   If Range("H" + j) > 150 Then
+                   
+                        If Range("B" + i) >= Range("H" + j) * 0.95 Then
+            
+                        Range("C" + i) = "ok"
+                        Range("F" + j + ":I" + j).Interior.Color = RGB(200, 240, 200)
+        
+                        Else
+                        
+                        Range("C" + i) = "separando..."
+                        Range("F" + j + ":I" + j).Interior.Color = RGB(250, 240, 160)
+                
+                        End If
+                        
+                   Else
+                   
+                        If (Range("B" + i) - Range("H" + j)) > -15 Then
+            
+                        Range("C" + i) = "ok"
+                        Range("F" + j + ":I" + j).Interior.Color = RGB(200, 240, 200)
+        
+                        Else
+                        
+                        Range("C" + i) = "separando..."
+                        Range("F" + j + ":I" + j).Interior.Color = RGB(250, 240, 160)
+
+                        End If
+                   
+                   
+                   End If
+
+
+                    
+                End If
+        
+            End If
+        
+        
+        Next j
+        
+        
+        Next i
+        
+        If Range("A2") <> "" And Range("C2") = "" Then
+        
+            Call verificaValores
+            
+        End If
+        
+        Call borda
+        Call quantidadeAberto(valorJ2)
+        Call quantidadeSeparada(valorK2)
+        Call quantidadeFalta(valorL2)
+        Call contaPedidos
+        
+        Range("J2") = valorJ2
+        Range("K2") = valorK2
+        Range("L2") = valorL2
+        Range("Q2") = Now
+        
+        Range("A1") = "Pedido em Separação"
+        Range("B1") = "Qtd. Separada"
+        Range("C1") = "Status"
+        Range("D1") = "Hora - Separação"
+        Range("F1") = "Hora - Liberação"
+        Range("G1") = "Pedido em Aberto"
+        Range("H1") = "Qtd. Vendida"
+        Range("I1") = "Qtd. de Itens"
+        Range("J1") = "Qtd. Total em Aberto"
+        Range("K1") = "Qtd. Total Separada"
+        Range("L1") = "Qtd. Falta Separar"
+        Range("M1") = "Total de Pedidos"
+        Range("N1") = "Pedidos Não Sep."
+        Range("O1") = "Pedidos Pronto"
+        Range("P1") = "Pedido em Separação"
+        Range("Q1") = "Atualizado"
+        
+        
+              
+End Sub
+Function quantidadeAberto(x)
+
+Dim linha As Integer
+
+linha = 2
+
+    While (Range("H" + CStr(linha)) <> "")
+    
+    x = x + Range("H" + CStr(linha))
+    linha = linha + 1
+    
+    Wend
+    
+    If (Range("H2") = "") Then
+        
+        x = 0
+        
+    End If
+        
+End Function
+Function quantidadeSeparada(z)
+
+Dim linha As Integer
+
+linha = 2
+
+    While (Range("B" + CStr(linha)) <> "")
+    
+    z = z + Range("B" + CStr(linha))
+    linha = linha + 1
+    
+    Wend
+    
+    If (Range("B2") = "") Then
+        
+        z = 0
+            
+    End If
+        
+End Function
+Function quantidadeFalta(y)
+
+Dim linha As Integer
+
+linha = 2
+
+    While (Range("H" + CStr(linha)) <> "")
+        
+        If Range("H" + CStr(linha)).Interior.Color = RGB(255, 255, 255) Then
+        
+            y = y + Range("H" + CStr(linha))
+        
+        ElseIf Range("H" + CStr(linha)).Interior.Color = RGB(250, 240, 160) Then
+        
+            For i = 2 To 1000
+            
+                If Range("G" + CStr(linha)) = Range("A" + CStr(i)) Then
+                
+                    y = y + Range("H" + CStr(linha)) - Range("B" + CStr(i))
+                    
+                    Exit For
+                
+                End If
+            
+            Next i
+        
+        End If
+        
+    linha = linha + 1
+    
+    Wend
+        
+End Function
+Function verificaValores()
+
+Dim linha As Integer
+Dim caminho As String
+
+linha = 2
+
+    While Range("A" + CStr(linha)) <> ""
+    
+        If Range("C" + CStr(linha)) = "" Then
+        
+            caminho = "D" + CStr(linha)
+                       
+        End If
+    
+    linha = linha + 1
+    
+    Wend
+    
+    Range("A2:" + caminho).Delete (xlUp)
+            
+End Function
+Function contaPedidos()
+
+Dim linha, pronto, separacao, aberto, total As Integer
+
+linha = 2
+aberto = 0
+pronto = 0
+separacao = 0
+
+    While Range("G" + CStr(linha)) <> ""
+    
+        If Range("G" + CStr(linha)).Interior.Color = RGB(200, 240, 200) Then
+        
+        pronto = pronto + 1
+        
+        ElseIf Range("G" + CStr(linha)).Interior.Color = RGB(250, 240, 160) Then
+        
+        separacao = separacao + 1
+        
+        ElseIf Range("G" + CStr(linha)).Interior.Color = RGB(255, 255, 255) Then
+        
+        aberto = aberto + 1
+            
+        End If
+    
+    linha = linha + 1
+    
+    Wend
+    
+    total = pronto + separacao + aberto
+    
+    Range("M2") = total
+    Range("N2") = aberto
+    Range("O2") = pronto
+    Range("P2") = separacao
+        
+End Function
+Function borda()
+Dim linhaA, linhaG As Integer
+
+linhaA = 2
+linhaG = 2
+
+'para SZA temos:
+While (Range("A" + CStr(linhaA)) <> "")
+
+    linhaA = linhaA + 1
+
+Wend
+
+linhaA = linhaA - 1
+
+    Range("A1:D" + CStr(linhaA)).Borders(xlDiagonalDown).LineStyle = xlNone
+    Range("A1:D" + CStr(linhaA)).Borders(xlDiagonalUp).LineStyle = xlNone
+    With Range("A1:D" + CStr(linhaA)).Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Range("A1:D" + CStr(linhaA)).Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Range("A1:D" + CStr(linhaA)).Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Range("A1:D" + CStr(linhaA)).Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    Range("A1:D" + CStr(linhaA)).Borders(xlInsideVertical).LineStyle = xlNone
+    Range("A1:D" + CStr(linhaA)).Borders(xlInsideHorizontal).LineStyle = xlNone
+    
+'para SC6 e SC5 temos:
+While (Range("G" + CStr(linhaG)) <> "")
+
+    linhaG = linhaG + 1
+
+Wend
+
+linhaG = linhaG - 1
+
+    Range("A1:D" + CStr(linhaG)).Borders(xlDiagonalDown).LineStyle = xlNone
+    Range("A1:D" + CStr(linhaG)).Borders(xlDiagonalUp).LineStyle = xlNone
+    With Range("F1:I" + CStr(linhaG)).Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Range("F1:I" + CStr(linhaG)).Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Range("F1:I" + CStr(linhaG)).Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Range("F1:I" + CStr(linhaG)).Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    Range("F1:I" + CStr(linhaG)).Borders(xlInsideVertical).LineStyle = xlNone
+    Range("F1:I" + CStr(linhaG)).Borders(xlInsideHorizontal).LineStyle = xlNone
+
+End Function
